@@ -5,20 +5,21 @@
 
 const uint8_t MASK_D2 = (1 << PD2);
 const uint8_t DEBOUNCE_DELAY = 10;
-const int LONG_DELAY = 2000;
+
+const uint16_t GREEN_LED_ON_DELAY = 2000;
 
 enum class States
 {
     INIT,
     PRESSED_1,
-    UNPRESSED_1,
+    RELEASED_1,
     PRESSED_2,
-    UNPRESSED_2,
+    RELEASED_2,
     PRESSED_3,
-    UNPRESSED_3
+    RELEASED_3
 };
 
-States actualState = {States::INIT};
+States currentState = {States::INIT};
 
 bool isD2Pressed()
 {
@@ -50,46 +51,46 @@ int main()
 
     while (true)
     {
-        switch (actualState)
+        switch (currentState)
         {
 
         case States::INIT:
             if (isD2Pressed())
-                actualState = States::PRESSED_1;
+                currentState = States::PRESSED_1;
             break;
 
         case States::PRESSED_1:
             if (!isD2Pressed())
-                actualState = States::UNPRESSED_1;
+                currentState = States::RELEASED_1;
             break;
 
-        case States::UNPRESSED_1:
+        case States::RELEASED_1:
             if (isD2Pressed())
-                actualState = States::PRESSED_2;
+                currentState = States::PRESSED_2;
             break;
 
         case States::PRESSED_2:
             if (!isD2Pressed())
-                actualState = States::UNPRESSED_2;
+                currentState = States::RELEASED_2;
             break;
 
-        case States::UNPRESSED_2:
+        case States::RELEASED_2:
             if (isD2Pressed())
-                actualState = States::PRESSED_3;
+                currentState = States::PRESSED_3;
             break;
 
         case States::PRESSED_3:
             if (!isD2Pressed())
-                actualState = States::UNPRESSED_3;
+                currentState = States::RELEASED_3;
             break;
 
-        case States::UNPRESSED_3:
+        case States::RELEASED_3:
 
             setLedGreen();
-            _delay_ms(LONG_DELAY); // 2s
+            _delay_ms(GREEN_LED_ON_DELAY); // 2s
             setLedOff();
 
-            actualState = States::INIT;
+            currentState = States::INIT;
 
             break;
         }
