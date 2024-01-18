@@ -1,3 +1,44 @@
+/**
+Auteurs : Luca Bedel et Alice Vergeau
+Matricules : ???????? et 2211118
+Date : 
+
+TP2
+Section #6
+Équipe 142
+
+# Description du programme :
+Programme qui paramètre la DEL libre de la carte mère pour rester éteinte au 
+début, puis s'allumer pendant 2 secondes après qu'on ait pressé et relaché le 
+bouton libre trois fois.
+
+# Identification matérielle :
+A0 et A1 sont branchés à la DEL libre, et sont donc en sorties.
+D2 est utilisé pour contrôler le bouton, et donc est en entrée pour pouvoir 
+détecter quand le bouton est pressé
+
+Table des états :
+
++------------+--------+--------------+------+
+| Etat       | Bouton | Etat suivant | LED  |
++------------+--------+--------------+------+
+| INIT       | 0      | INIT         | 0    |
+| INIT       | 1      | PRESSED_1    | 0    |
+| PRESSED_1  | 0      | RELEASED_1   | 0    |
+| PRESSED_1  | 1      | PRESSED_1    | 0    |
+| RELEASED_1 | 0      | RELEASED_1   | 0    |
+| RELEASED_1 | 1      | PRESSED_2    | 0    |
+| PRESSED_2  | 0      | RELEASED_2   | 0    |
+| PRESSED_2  | 1      | PRESSED_2    | 0    |
+| RELEASED_2 | 0      | RELEASED_2   | 0    |
+| RELEASED_2 | 1      | PRESSED_3    | 0    |
+| PRESSED_3  | 0      | RELEASED_3   | 0    |
+| PRESSED_3  | 1      | PRESSED_3    | 0    |
+| RELEASED_3 | X      | INIT         | vert |
++------------+--------+--------------+------+
+
+**/
+
 #include <avr/io.h>
 #define F_CPU 8000000
 #include <util/delay.h>

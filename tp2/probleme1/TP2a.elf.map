@@ -321,7 +321,7 @@ END GROUP
  *(.bss)
  .bss           0x0000000000800100        0x0 /usr/lib/gcc/avr/5.4.0/../../../avr/lib/avr5/crtatmega324pa.o
  .bss           0x0000000000800100        0x2 main.o
-                0x0000000000800100                actualState
+                0x0000000000800100                currentState
  .bss           0x0000000000800102        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_exit.o)
  .bss           0x0000000000800102        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_tablejump2.o)
  .bss           0x0000000000800102        0x0 /usr/lib/gcc/avr/5.4.0/avr5/libgcc.a(_clear_bss.o)
@@ -361,9 +361,9 @@ END GROUP
  *(.stab)
  .stab          0x0000000000000000      0x7c8 main.o
 
-.stabstr        0x0000000000000000      0xf38
+.stabstr        0x0000000000000000      0xf3e
  *(.stabstr)
- .stabstr       0x0000000000000000      0xf38 main.o
+ .stabstr       0x0000000000000000      0xf3e main.o
 
 .stab.excl
  *(.stab.excl)
