@@ -80,7 +80,7 @@ ISR(INT0_vect) {
 void initialisation ( void ) {
     cli (); // désactive les interruptions (pause)
 
-    DDRA |= (1 << DDA0) | (1 << DDA1); // A0 et A1 en sortie
+    DDRD |= (1 << DDD4) | (1 << DDD5); // A0 et A1 en sortie
     DDRD &= ~(1 << DDD2); // D2 en entrée
 
     // cette procédure ajuste le registre EIMSK
