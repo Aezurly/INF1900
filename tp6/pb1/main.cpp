@@ -31,6 +31,24 @@ Le breadboard est composé de :
 - un petit condensateur (gris ou bleu) de 0.1 µF (Digi-Key: BC1621-ND)
 - une résistance de 100K (brun-noir-jaune) (Digi-Key: S100KQTR-ND)
 
+#Table des Etats : 
+
+
++----------+--------+----------+--------------+----------+
+|   Etat   | Bouton | Compteur | Etat Suivant |   LED    |
++----------+--------+----------+--------------+----------+
+| INIT     | 0      | x        | INIT         | Off      |
+| INIT     | 1      | x        | COUNTING     | Off      |
+| COUNTING | 0      | <120     | DISPLAY      | Off      |
+| COUNTING | 1      | <120     | COUNTING     | Off      |
+| COUNTING | x      | 120      | DISPLAY      | Off      |
+| DISPLAY  | x      | <60      | DISPLAY      | FLASHING |
+| DISPLAY  | x      | 60       | END          | FLASHING |
+| END      | x      | x        | INIT         | Vert/Off |
++----------+--------+----------+--------------+----------+
+
+
+
 **/
 
 #include <avr/io.h>
