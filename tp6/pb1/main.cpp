@@ -1,20 +1,35 @@
 /**
 Auteurs : Luca Bedel et Alice Vergeau
 Matricules : 2297114 et 2211118
-Date :
+Date : 13/02/2024
 
 TP2
 Section #6
 Équipe 142
 
 # Description du programme :
-Programme qui permet de changer la couleur (rouge,ambre,vert) de la DEL de la carte mère grâce à une machine à état.
-La DEL change de couleur qu'on appuie ou on relache le bouton Interrupt.
+Programme où, lorsque le bouton est enfoncé, un compteur qui incrémente 10 fois
+par seconde est activé. Quand le bouton est relâché ou lorsque le compteur
+atteint 120, la lumière clignote vert pendant 1/2 seconde. Ensuite, la carte
+mère ne fait rien. Puis, deux secondes plus tard, la lumière rouge s'allume.
+Elle devra clignoter (compteur / 2) fois au rythme de 2 fois par seconde.
+Ensuite, la lumière tourne au vert pendant une seconde. Finalement, elle
+s'éteint et le robot revient à son état original.
+
+En bref, le programme clignote en rouge 5 fois le nombre de seconde que le
+bouton a été pressé, et ne dépasse jamais 12 secondes de bouton pressé.
 
 # Identification matérielle :
-A0 et A1 sont branchés à la DEL libre, et sont donc en sorties.
+
+A0 et A1 sont branchés à la DEL libre, et sont donc en sortie.
 D2 est utilisé pour contrôler le bouton, et donc est en entrée pour pouvoir
-détecter quand le bouton est pressé
+détecter quand le bouton est pressé. On a retiré le cavalier sur IntEN pour
+utiliser notre propre bouton sur le breadboard.
+
+Le breadboard est composé de :
+- un bouton-poussoir blanc (Digi-Key: EG1328-ND)
+- un petit condensateur (gris ou bleu) de 0.1 µF (Digi-Key: BC1621-ND)
+- une résistance de 100K (brun-noir-jaune) (Digi-Key: S100KQTR-ND)
 
 **/
 
@@ -24,18 +39,22 @@ détecter quand le bouton est pressé
 #include <stdint.h>
 #include <avr/interrupt.h>
 
-volatile uint8_t counter = 0;
-const uint16_t TIMER_INTERVAL = 781; // 0.1s pour le problème 1
+const uint16_t TIMER_INTERVAL = 781; // nombre de cycles pour 0.1 secondes
 const uint8_t MAX_COUNTER = 120;
-const uint8_t FLASHING_TIME_INTERVAL = 250; // en ms
+const uint8_t RED_FLASHING_INTERVAL = 250;  // en ms
 const uint16_t WAIT_TIME_INTERVAL = 2000;   // em ms
+const uint8_t GREEN_FLASHING_INTERVAL = 50; // en ms
+const uint8_t GREEN_FLASHING_TIME = 500;    // en ms
+const uint8_t GREEN_LIGHT_DELAY = 1000;     // en ms
+
 volatile bool isPressed = false;
+volatile uint8_t counter = 0;
 
 enum class States
 {
     INIT,
-    START,
-    ACTIVE,
+    COUNTING,
+    DISPLAY,
     END
 };
 
@@ -64,20 +83,20 @@ void startCounter(int time)
     cli();
     TCNT1 = 0; // valeur initiale du compteur
 
-    OCR1A = time; // nb cycles pour 0.1s
+    OCR1A = time; // nombre cycles pour 0.1s
 
     TCCR1A &= 0;                         // normal mode
-    TCCR1B |= (1 << CS12) | (1 << CS10); // prescaler -> on utilise le timer 1 donc CS1 puis pour 1024 on a 101
+    TCCR1B |= (1 << CS12) | (1 << CS10); // prescaler de 1024
     TCCR1C &= 0;
 
-    TIMSK1 |= (1 << OCIE1A); // quand est-ce qu'on veut lancer l'interruption = aux temps A et B
+    TIMSK1 |= (1 << OCIE1A); // lancer l'interruption au temps OCR1A
 
     sei();
 }
 
 ISR(TIMER1_COMPA_vect)
 {
-    if (currentState == States::START)
+    if (currentState == States::COUNTING)
     {
         counter++;
         startCounter(TIMER_INTERVAL);
@@ -86,18 +105,18 @@ ISR(TIMER1_COMPA_vect)
 
 ISR(INT0_vect)
 {
-    if (currentState == States::START || currentState == States::INIT)
+    // Le bouton pressé ne change l'état que lorsqu'on est en COUNTING ou INIT
+    if (currentState == States::COUNTING || currentState == States::INIT)
     {
         if (isPressed)
-            currentState = States::ACTIVE;
+            currentState = States::DISPLAY;
         else
         {
-            currentState = States::START;
+            currentState = States::COUNTING;
             startCounter(TIMER_INTERVAL);
         }
     }
     isPressed = !isPressed;
-    // EIFR |= (1 << INTF0) ;
 }
 
 void initialisation(void)
@@ -131,38 +150,47 @@ int main()
             initialisation();
             break;
 
-        case States::START:
+        case States::COUNTING:
             if (counter == MAX_COUNTER)
             {
-                currentState = States::ACTIVE;
+                currentState = States::DISPLAY;
             }
 
             break;
 
-        case States::ACTIVE:
-            for (unsigned i = 0; i < (WAIT_TIME_INTERVAL / (8 * FLASHING_TIME_INTERVAL / 5)); i++)
+        case States::DISPLAY:
+
+            // Lumière clignote en vert pendant GREEN_FLASHING_TIME ms
+            for (unsigned i = 0; i < GREEN_FLASHING_TIME / (2 * GREEN_FLASHING_INTERVAL); i++)
             {
                 setLedGreen();
-                _delay_ms(FLASHING_TIME_INTERVAL / 5);
+                _delay_ms(GREEN_FLASHING_INTERVAL);
                 setLedOff();
-                _delay_ms(FLASHING_TIME_INTERVAL / 5);
+                _delay_ms(GREEN_FLASHING_INTERVAL);
             }
 
+            // Lumière reste éteinte pendant WAIT_TIME_INTERVAL ms
             _delay_ms(WAIT_TIME_INTERVAL);
+
+            // Lumière clignote en rouge counter/2 fois
             for (unsigned i = 0; i < (counter / 2); i++)
             {
                 setLedRed();
-                _delay_ms(FLASHING_TIME_INTERVAL);
+                _delay_ms(RED_FLASHING_INTERVAL);
                 setLedOff();
-                _delay_ms(FLASHING_TIME_INTERVAL);
+                _delay_ms(RED_FLASHING_INTERVAL);
             }
+
             currentState = States::END;
             break;
 
         case States::END:
+
+            // Lumière reste verte pendant GREEN_LIGHT_DELAY ms
             setLedGreen();
-            _delay_ms(WAIT_TIME_INTERVAL / 2);
+            _delay_ms(GREEN_LIGHT_DELAY);
             setLedOff();
+
             currentState = States::INIT;
             counter = 0;
             break;
