@@ -1,21 +1,36 @@
 /**
 Auteurs : Luca Bedel et Alice Vergeau
 Matricules : 2297114 et 2211118
-Date :
+Date : 15/02/2024
 
 TP2
 Section #6
 Équipe 142
 
 # Description du programme :
-Programme qui permet de changer la couleur (rouge,ambre,vert) de la DEL de la carte mère grâce à une machine à état.
-La DEL change de couleur qu'on appuie ou on relache le bouton Interrupt.
+
+Programme qui permet de changer la couleur (rouge,orange,vert) de la DEL de la 
+carte mère en fonction de la valeur enrengistrée par le CAN (Convertisseur 
+Analogue - Numérique).
+La DEL change de couleur, vert quand la valeur lue est basse, orange lorsqu'elle
+est moyenne et rouge lorsqu'elle est haute.
+Dans cette exercice en particulier, on utilise une photorésistance pour capter 
+la lumière. Ainsi, la DEL est verte lorsque la lumière ambiante est très faible,
+orange lorsqu'elle est moyenne et rouge lorsqu'elle est forte.
+
 
 # Identification matérielle :
-A0 et A1 sont branchés à la DEL libre, et sont donc en sorties.
-D2 est utilisé pour contrôler le bouton, et donc est en entrée pour pouvoir
-détecter quand le bouton est pressé
 
+B0 et B1 sont branchés à la DEL libre, et sont donc en sorties.
+A0 et A1 sont branchés par le fil de données à notre circuit sur le breadboard, 
+et sont donc en entrée pour pouvoir être lue.
+
+Le breadboard est composé de :
+- un petit condensateur de 0.1 µF (Digi-Key: BC1621-ND)
+- une résistance de 10K (brun-noir-orange) (Digi-Key: S10KQTR-ND)
+- une photorésistance (Digi-Key: PDV-P8101-ND)
+Deux fils partent du breadboard, un vers un port Vcc et GND, et l'autre est le 
+fil de données qui est relié à un port analogique (dans notre cas A0 et A1).
 **/
 
 #include <avr/io.h>
@@ -26,8 +41,15 @@ détecter quand le bouton est pressé
 #include "can.h"
 
 const uint8_t BLINK_ORANGE_DELAY = 10;
-const uint8_t FLASHING_TIME_INTERVAL = 250; // en ms
-const uint16_t WAIT_TIME_INTERVAL = 2000;   // em ms
+
+// Position où l'on va lire analogiquement les données à convertir de manière 
+// digitale, dans notre cas on lit A0, donc position 0
+const uint8_t READING_POSITION = 0; 
+
+// Valeur décidée arbitrairement. Au dessus, la lumière est orange, en dessous verte.
+const uint8_t ORANGE_THRESHOLD = 0xD8; 
+// Valeur décidée arbitrairement. Au dessus, la lumière est red, en dessous orange.
+const uint8_t RED_THRESHOLD = 0xF0; 
 
 enum class States
 {
@@ -69,18 +91,18 @@ void initialisation(void)
 {
     DDRA &= ~(1 << DDA0) | ~(1 << DDA1); // A0 et A1 en entrée
     DDRB |= (1 << DDB0) | (1 << DDB1); // B0 et B1 en sortie
-
-    can();
 }
 
 void checkState() {
-    can analog = can();
-    uint8_t table = analog.lecture(0x00) >> 2;
+    // Lecture des données analogues et conversion en données numériques
+    can analogValue = can();
+    uint8_t digitalValue = analogValue.lecture(READING_POSITION) >> 2;
 
-    if(table < 0xC0) {
+    // Changement d'états en fonction de ces données.
+    if(digitalValue < ORANGE_THRESHOLD) {
         currentState = {States::GREEN};
     }
-    else if (table < 0xE0) {
+    else if (digitalValue < RED_THRESHOLD) {
         currentState = {States::ORANGE};
     }
     else {
